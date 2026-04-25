@@ -1,0 +1,11 @@
+.border-dashed {
+  border: 2px dashed #ccc !important;
+  transition: all 0.3s ease;
+}
+.border-dashed:hover {
+  border-color: #6c757d !important;
+  background-color: #f8f9fa;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
