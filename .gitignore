@@ -1,4 +1,40 @@
-node_modules/
-.venv/
+# --- Python / FastAPI ---
 __pycache__/
-uploads/*.pdf
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# --- SQLite Database ---
+*.db
+*.db-journal
+
+# --- RSA Keys (Security Risk - Never upload these!) ---
+*.pem
+
+# --- App Uploads (Temporary files) ---
+uploads/
+backend/uploads/
+
+# --- Node / Angular ---
+node_modules/
+/dist/
+/.angular/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- IDEs / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Build Outputs ---
+out-tsc/
+/dist/
+/bazel-out/

@@ -1,0 +1,71 @@
+<div class="container mt-5">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white">
+      <h4 class="mb-0">🛡️ Verify Certificate Authenticity</h4>
+    </div>
+    <div class="card-body p-4 text-center">
+      
+      <div class="mb-4">
+        <label for="fileUpload" class="btn btn-outline-secondary btn-lg w-100 p-4 border-dashed cursor-pointer">
+          <i class="bi bi-cloud-arrow-up display-4 d-block mb-2"></i>
+          {{ selectedFile() ? selectedFile()!.name : 'Click to Upload PDF Certificate' }}
+          <input type="file" id="fileUpload" class="d-none" accept=".pdf" (change)="onFileSelected($event)">
+        </label>
+      </div>
+
+      <button class="btn btn-success btn-lg px-5" (click)="verifyDocument()" [disabled]="!selectedFile() || isLoading()">
+        <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-2"></span>
+        Verify Now
+      </button>
+
+      <div *ngIf="verificationResult() as result" class="mt-5 text-start">
+        
+        <div class="alert" [ngClass]="result.status === 'success' ? 'alert-success' : 'alert-danger'">
+          <h5 class="alert-heading">{{ result.status === 'success' ? '✅ Authentic Document' : '❌ Forgery Detected' }}</h5>
+          <p class="mb-0">{{ result.message || 'All security layers passed successfully.' }}</p>
+        </div>
+
+        <div *ngIf="result.status === 'success'" class="row mt-4">
+          <div class="col-md-4 mb-3">
+            <div class="card border-success h-100">
+              <div class="card-body">
+                <h6 class="text-muted">Soft Copy Signature</h6>
+                <p class="fw-bold text-success mb-0">{{ result.soft_copy }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card border-success h-100">
+              <div class="card-body">
+                <h6 class="text-muted">Hard Copy (QR) & Visuals</h6>
+                <p class="fw-bold text-success mb-0">{{ result.hard_copy }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card border-info h-100">
+              <div class="card-body">
+                <h6 class="text-muted">Database Registry</h6>
+                <p class="fw-bold text-info mb-0">{{ result.database }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="result.student_info" class="card mt-4 bg-light">
+          <div class="card-body">
+            <h5 class="card-title border-bottom pb-2">Decrypted Student Record</h5>
+            <ul class="list-group list-group-flush bg-transparent">
+              <li class="list-group-item bg-transparent"><strong>Name:</strong> {{ result.student_info.student_name }}</li>
+              <li class="list-group-item bg-transparent"><strong>Faculty:</strong> {{ result.student_info.faculty }}</li>
+              <li class="list-group-item bg-transparent"><strong>Grade:</strong> {{ result.student_info.grade }}</li>
+              <li class="list-group-item bg-transparent"><strong>Class:</strong> {{ result.student_info.graduation_year }}</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
