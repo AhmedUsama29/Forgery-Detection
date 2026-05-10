@@ -13,7 +13,8 @@ export class CertificateListComponent implements OnInit {
   
   certificates = signal<CertificateRecord[]>([]);
   isLoading = signal<boolean>(false);
-  selectedCert = signal<any>(null); // لتخزين الشهادة المراد عرض تفاصيلها
+  isGeneratingPDF = signal<boolean>(false);
+  selectedCert = signal<any>(null);
 
   ngOnInit() {
     this.loadCertificates();
@@ -29,6 +30,7 @@ export class CertificateListComponent implements OnInit {
       error: (err) => {
         console.error('Fetch error:', err);
         this.isLoading.set(false);
+        alert('Failed to load certificates ❌');
       }
     });
   }
@@ -39,28 +41,77 @@ export class CertificateListComponent implements OnInit {
       return;
     }
     
-    if (confirm('هل أنت متأكد من إلغاء هذه الشهادة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+    if (confirm('Are you sure you want to revoke this certificate? This action cannot be undone.')) {
       this.certService.deleteCertificate(id).subscribe({
         next: () => {
           this.certificates.update(list => list.filter(c => c.doc_id !== id));
-          alert('تم إلغاء الشهادة بنجاح ✅');
+          alert('Certificate revoked successfully ✅');
         },
         error: (err) => {
           console.error('Delete error:', err);
-          alert('فشل في إلغاء الشهادة ❌');
+          alert('Failed to revoke certificate ❌');
         }
       });
     }
   }
 
+  // View PDF certificate (opens in new tab)
+  viewCertificate(certificate: CertificateRecord) {
+    this.isGeneratingPDF.set(true);
+    
+    this.certService.getCertificatePDF(certificate.doc_id).subscribe({
+      next: (pdfBlob: Blob) => {
+        const url = window.URL.createObjectURL(pdfBlob);
+        window.open(url, '_blank');
+        window.URL.revokeObjectURL(url);
+        this.isGeneratingPDF.set(false);
+      },
+      error: (err) => {
+        console.error('PDF fetch error:', err);
+        alert('Failed to display PDF certificate ❌');
+        this.isGeneratingPDF.set(false);
+      }
+    });
+  }
+
+  // Download PDF certificate (saves to device)
+  downloadCertificate(certificate: CertificateRecord) {
+    this.isGeneratingPDF.set(true);
+    
+    this.certService.getCertificatePDF(certificate.doc_id).subscribe({
+      next: (blob: Blob) => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        // File name: Certificate_Student_Name.pdf
+        link.download = `Certificate_${certificate.student_name.replace(/\s/g, '_')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        this.isGeneratingPDF.set(false);
+        alert('Certificate downloaded successfully ✅');
+      },
+      error: (err) => {
+        console.error('Download error:', err);
+        alert('Failed to download certificate ❌');
+        this.isGeneratingPDF.set(false);
+      }
+    });
+  }
+
+  // View certificate details
   viewDetails(id: string) {
     this.certService.getCertificateById(id).subscribe({
       next: (res) => {
-        // فك تشفير الـ JSON المخزن لعرضه بشكل جميل
         this.selectedCert.set(res);
-        // يمكنك هنا استخدام Bootstrap Modal برمجياً أو عرضه في الـ HTML
       },
-      error: (err) => alert('فشل في جلب التفاصيل ❌')
+      error: (err) => {
+        console.error('Details error:', err);
+        alert('Failed to fetch details ❌');
+      }
     });
   }
 }
