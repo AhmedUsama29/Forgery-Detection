@@ -1,7 +1,7 @@
 <div class="container mt-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-primary fw-bold">📋 سجل الشهادات الجامعية</h2>
-    <button class="btn btn-primary" (click)="loadCertificates()">تحديث القائمة</button>
+    <h2 class="text-primary fw-bold">📋 University Certificates Record</h2>
+    <button class="btn btn-primary" (click)="loadCertificates()">Refresh List</button>
   </div>
 
   <div class="card shadow border-0">
@@ -9,11 +9,11 @@
       <table class="table table-hover align-middle mb-0 text-center">
         <thead class="table-dark">
           <tr>
-            <th>اسم الطالب</th>
-            <th>الكلية</th>
-            <th>سنة التخرج</th>
-            <th>المعرف (ID)</th>
-            <th>الإجراءات</th>
+            <th>Student Name</th>
+            <th>Faculty</th>
+            <th>Graduation Year</th>
+            <th>ID</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -26,25 +26,50 @@
             </td>
             <td>
               <div class="btn-group">
-                <button class="btn btn-outline-info btn-sm" (click)="viewDetails(cert.doc_id)">
-                  🔍 عرض
+                <!-- View Button to display PDF -->
+                <button class="btn btn-outline-info btn-sm" 
+                        (click)="viewCertificate(cert)"
+                        [disabled]="isGeneratingPDF()"
+                        title="View Certificate">
+                  👁️ View
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="deleteCert(cert.doc_id)">
-                  🗑️ مسح
+                
+                <!-- Download Button to save PDF -->
+                <button class="btn btn-outline-success btn-sm" 
+                        (click)="downloadCertificate(cert)"
+                        [disabled]="isGeneratingPDF()"
+                        title="Download Certificate">
+                  ⬇️ Download
+                </button>
+                
+                <!-- Delete Button to remove certificate -->
+                <button class="btn btn-outline-danger btn-sm" 
+                        (click)="deleteCert(cert.doc_id)"
+                        title="Delete Certificate">
+                  🗑️ Delete
                 </button>
               </div>
             </td>
-          </tr>
+           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
+  <!-- Loading/Processing Message -->
+  <div *ngIf="isGeneratingPDF()" class="mt-3 alert alert-info text-center">
+    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+    Loading certificate...
+  </div>
+
+  <!-- Details View (Optional) -->
   <div *ngIf="selectedCert()" class="mt-4 card bg-light border-info">
     <div class="card-body">
-      <h5 class="card-title">التفاصيل الكاملة للشهادة:</h5>
+      <h5 class="card-title">Full Certificate Details:</h5>
       <pre class="bg-white p-3 border rounded">{{ selectedCert() | json }}</pre>
-      <button class="btn btn-secondary btn-sm" (click)="selectedCert.set(null)">إغلاق التفاصيل</button>
+      <button class="btn btn-secondary btn-sm" (click)="selectedCert.set(null)">
+        Close Details
+      </button>
     </div>
   </div>
 </div>

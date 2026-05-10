@@ -1,10 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 import io, base64, os, uuid, json
 from datetime import datetime
-
-# --- إعدادات الداتا بيز (SQLite) ---
 from sqlalchemy import create_engine, Column, String, DateTime, Text, Integer
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
@@ -33,7 +32,6 @@ def get_db():
     try: yield db
     finally: db.close()
 
-# --- مكاتب التشفير والـ PDF ---
 from Crypto.Hash import SHA256
 from Crypto.Signature import pkcs1_15
 from Crypto.PublicKey import RSA
@@ -86,7 +84,6 @@ def create_pro_pdf(student, qr_path):
     doc.build(elements)
     return buffer.getvalue()
 
-# 1. إصدار الشهادة (الإضافة للداتا بيز)
 @app.post("/issue-certificate")
 def issue_certificate(student: StudentData, db: Session = Depends(get_db)):
     priv_key = RSA.import_key(open(PRIV_KEY, "rb").read())
@@ -101,10 +98,15 @@ def issue_certificate(student: StudentData, db: Session = Depends(get_db)):
     file_sig = pkcs1_15.new(priv_key).sign(file_hash)
     file_sig_b64 = base64.b64encode(file_sig).decode()
     final_pdf_bytes = pdf_bytes + f"\n%VERIFY_SIG:{file_sig_b64}".encode('utf-8')
+    
+    doc_id = str(uuid.uuid4())
+    
+    pdf_save_path = f"{UPLOAD_DIR}/cert_{doc_id}.pdf"
+    with open(pdf_save_path, "wb") as f:
+        f.write(final_pdf_bytes)
 
-    # حفظ السجل (هنا الـ Save بيحصل)
     record = CertificateRecord(
-        doc_id=str(uuid.uuid4()), student_name=student.student_name,
+        doc_id=doc_id, student_name=student.student_name,
         faculty=student.faculty, grade=student.grade, graduation_year=student.graduation_year,
         sha256_hash=file_hash.hexdigest(), signature_b64=file_sig_b64,
         certificate_json=json.dumps(student.model_dump()), issued_at=datetime.utcnow()
@@ -113,67 +115,81 @@ def issue_certificate(student: StudentData, db: Session = Depends(get_db)):
     db.commit()
     return {"file_name": f"Cert_{student.student_name}.pdf", "pdf_base64": base64.b64encode(final_pdf_bytes).decode()}
 
-# 2. جلب كل الشهادات (عشان شاشة الـ List تشتغل)
 @app.get("/certificates")
 def get_all_certificates(db: Session = Depends(get_db)):
     return db.query(CertificateRecord).all()
 
-# 3. مسح شهادة (Revoke)
 @app.delete("/certificates/{doc_id}")
 def delete_certificate(doc_id: str, db: Session = Depends(get_db)):
     record = db.query(CertificateRecord).filter(CertificateRecord.doc_id == doc_id).first()
-    if not record: raise HTTPException(404, "Not found")
+    if not record: 
+        raise HTTPException(404, "Not found")
+    
+    pdf_path = f"{UPLOAD_DIR}/cert_{doc_id}.pdf"
+    if os.path.exists(pdf_path):
+        os.remove(pdf_path)
+    
     db.delete(record)
     db.commit()
     return {"status": "success", "message": "Certificate revoked"}
 
-# 4. جلب شهادة بالـ ID
 @app.get("/certificates/{doc_id}")
 def get_cert(doc_id: str, db: Session = Depends(get_db)):
     record = db.query(CertificateRecord).filter(CertificateRecord.doc_id == doc_id).first()
-    if not record: raise HTTPException(404, "Not found")
+    if not record: 
+        raise HTTPException(404, "Not found")
     return record
 
-# ---------------------------------------------------------
-# التحقق الشامل والدقيق (Hybrid + DB Check + Anti-Incremental)
-# ---------------------------------------------------------
+@app.get("/certificates/{doc_id}/pdf")
+def get_certificate_pdf(doc_id: str, db: Session = Depends(get_db)):
+    """إعادة ملف PDF للشهادة باستخدام doc_id"""
+    record = db.query(CertificateRecord).filter(CertificateRecord.doc_id == doc_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    pdf_path = f"{UPLOAD_DIR}/cert_{doc_id}.pdf"
+    
+    if os.path.exists(pdf_path):
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename=certificate_{doc_id}.pdf"}
+        )
+    else:
+        raise HTTPException(status_code=404, detail="PDF file not found")
+
 @app.post("/verify")
 async def verify(file: UploadFile = File(...), db: Session = Depends(get_db)):
     raw_bytes = await file.read()
     marker = b"\n%VERIFY_SIG:"
     
-    # 1. لو الـ Marker مش موجود، يبقى الملف اتلعب فيه واتعمله Rewrite
     if marker not in raw_bytes: 
         return {"status": "failed", "message": "Soft Copy Tampering: Signature completely missing! ❌"}
         
     original_pdf_bytes, sig_and_extra = raw_bytes.rsplit(marker, 1)
     
-    # --- سد ثغرة الشخبطة (Anti-Incremental Update) ---
-    # بننضف المسافات، ولازم الباقي يكون التوقيع بس (توقيع 2048bit بيكون 344 حرف)
-    # لو الـ PDF Editor ضاف شخبطة بعد التوقيع، حجم الداتا دي هيكبر جداً
     clean_sig = sig_and_extra.strip()
-    if len(clean_sig) > 400: # لو فيه داتا تانية غير الـ Base64
+    if len(clean_sig) > 400:
         return {"status": "failed", "message": "Tampering Detected: File was modified after issuance! (Incremental Update) ❌"}
     
     current_hash = SHA256.new(original_pdf_bytes)
     pub_key = RSA.import_key(open(PUB_KEY, "rb").read())
     
     try:
-        # Layer 1: التحقق من التوقيع الرقمي (Soft Copy)
         pkcs1_15.new(pub_key).verify(current_hash, base64.b64decode(clean_sig.decode('utf-8')))
         
-        # Layer 2: التحقق من الداتا بيز (Registry)
         db_record = db.query(CertificateRecord).filter(CertificateRecord.sha256_hash == current_hash.hexdigest()).first()
         db_status = "Found in Registry ✅" if db_record else "Not in Registry (Off-chain) ⚠️"
         
-        # Layer 3: التحقق من الـ QR والنص المرئي (Hard Copy)
         path = f"{UPLOAD_DIR}/v_{uuid.uuid4()}.pdf"
         with open(path, "wb") as f: f.write(original_pdf_bytes)
         
         doc = fitz.open(path)
         qr_data, page_text = None, ""
         for page in doc:
-            page_text += page.get_text("text")  # استخراج النص
+            page_text += page.get_text("text")
             pix = page.get_pixmap(dpi=300)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             decoded = decode(img)
@@ -188,7 +204,6 @@ async def verify(file: UploadFile = File(...), db: Session = Depends(get_db)):
         
         ext = qr_data["data"]
         
-        # مطابقة النص الموجود جوه الـ QR بالنص المكتوب على الشهادة (ضد التعديل بالفوتوشوب)
         if ext["student_name"] not in page_text or ext["grade"] not in page_text:
             return {"status": "failed", "message": "Visual Tampering detected! Text does not match QR. ❌"}
             
