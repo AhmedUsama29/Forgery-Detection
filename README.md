@@ -1,4 +1,4 @@
-# 🛡️ Document Forgery Detection & Authentication System
+#  Forgery Detection & Authentication System
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Angular](https://img.shields.io/badge/Angular-17+-dd1b16.svg?logo=angular&logoColor=white)](https://angular.io/)
@@ -10,7 +10,7 @@ The Document Forgery Detection & Authentication System provides an end-to-end cr
 
 ---
 
-## 🏗️ The 4-Layer Defense Mechanism
+##  The 4-Layer Defense Mechanism
 
 Our security topology is designed as a multi-tiered validation pipeline, ensuring that tampering is detected at the lowest possible computational cost while providing mathematically provable authenticity.
 
@@ -23,7 +23,7 @@ Our security topology is designed as a multi-tiered validation pipeline, ensurin
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 | Category | Technologies Used |
 | :--- | :--- |
@@ -55,7 +55,7 @@ Our security topology is designed as a multi-tiered validation pipeline, ensurin
 
 ---
 
-## 🚀 Installation & Setup
+##  Installation & Setup
 
 Follow the steps below to run the system locally.
 
@@ -80,7 +80,7 @@ ng serve
 
 ---
 
-## 🔌 Core API Endpoints
+##  Core API Endpoints
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -91,7 +91,7 @@ ng serve
 
 ---
 
-## 👥 Engineering Team
+##  Engineering Team
 
 | Name | GitHub |
 |------|--------|
