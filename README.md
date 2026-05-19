@@ -1,168 +1,207 @@
-# 🔍 Forgery Detection
+# 🛡️ Document Forgery Detection & Authentication System
 
-A full-stack application that detects document and image forgeries using cryptographic signing (RSA) and integrity verification techniques. The project combines a Python backend with a TypeScript/HTML frontend.
+
+
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+
+[![Angular](https://img.shields.io/badge/Angular-17+-dd1b16.svg?logo=angular&logoColor=white)](https://angular.io/)
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+
+**A highly secure, hybrid architecture for digital and printed document verification.**
+
+The Document Forgery Detection & Authentication System provides an end-to-end cryptographic and computer vision-based framework to ensure the integrity, authenticity, and non-repudiation of sensitive documents. By utilizing asymmetric cryptography for digital verification and optical character recognition (OCR) coupled with Quick Response (QR) codes for hard-copy validation, the system effectively mitigates sophisticated forgery attempts, including unauthorized modifications and deep-fake document alterations.
+
+
 
 ---
 
-## 📌 Features
 
-- **Forgery Detection** – Identifies whether a document or image has been tampered with
-- **RSA Digital Signatures** – Uses asymmetric cryptography (private/public key pair) to sign and verify content integrity
-- **REST API Backend** – Python-powered server exposing detection endpoints
-- **Modern Frontend** – TypeScript + HTML interface for uploading and verifying files
+
+## 🏗️ The 4-Layer Defense Mechanism
+
+
+
+Our security topology is designed as a multi-tiered validation pipeline, ensuring that tampering is detected at the lowest possible computational cost while providing mathematically provable authenticity.
+
+
+
+| Layer | Defense Mechanism | Description |
+
+| :---: | :--- | :--- |
+
+| **0** | **Marker Check** | Fast-fail verification scanning for the embedded `\n%VERIFY_SIG:` hidden marker indicating the presence of our cryptographic signature. |
+
+| **1** | **Cryptographic Check** | Decrypts the Base64-encoded RSA signature and verifies the payload against a computed SHA-256 hash using strict **PKCS#1 v1.5** padding, ensuring mathematical integrity. |
+
+| **2** | **Registry Check** | An $O(1)$ temporal complexity lookup against our SQLite registry using UUIDs and cryptographic hashes to guarantee the certificate has not been revoked or expired. |
+
+| **3** | **Visual / Hard-copy Check** | Decodes canonicalized JSON from the embedded QR code and cross-references the payload with OCR-extracted visible text via **PyMuPDF**, effectively detecting visual tampering (e.g., Photoshop alterations). |
+
+
 
 ---
 
-## 🗂️ Project Structure
+
+
+## 🛠️ Technology Stack
+
+
+
+| Category | Technologies Used |
+
+| :--- | :--- |
+
+| **Backend & API** | Python, FastAPI, Uvicorn |
+
+| **Frontend UI** | Angular, TypeScript |
+
+| **Database ORM** | SQLite, SQLAlchemy |
+
+| **Cryptography & CV** | RSA, SHA-256 (`PyCryptodome`), PyMuPDF (OCR), `pyzbar` (QR decoding) |
+
+
+
+---
+
+
+
+## 📂 Project Structure
+
+
+
+```text
+
+├── backend/
+
+│   ├── main.py                  # FastAPI application entry point
+
+│   ├── core/                    # Cryptographic & validation logic
+
+│   ├── api/                     # API routers and endpoints
+
+│   ├── models/                  # SQLAlchemy ORM models
+
+│   ├── database.py              # SQLite configuration
+
+│   └── requirements.txt         # Python dependencies
+
+└── frontend/
+
+    ├── src/                     # Angular source code
+
+    │   ├── app/                 # Components & Services
+
+    │   ├── assets/              # Static assets
+
+    │   └── environments/        # Environment configurations
+
+    ├── angular.json             # Angular workspace configuration
+
+    └── package.json             # Node.js dependencies
 
 ```
-Forgery-Detection/
-├── main.py              # Python backend entry point (FastAPI / Flask)
-├── requirements.txt     # Python dependencies
-├── private.pem          # RSA private key (used for signing)
-├── public.pem           # RSA public key (used for verification)
-├── frontend/            # TypeScript + HTML frontend
-│   └── ...
-├── package.json         # Node.js / frontend dependencies
-└── package-lock.json
-```
+
+
 
 ---
 
-## 🛠️ Tech Stack
 
-| Layer     | Technology              |
-|-----------|-------------------------|
-| Backend   | Python (FastAPI / Flask)|
-| Crypto    | RSA (PEM key pairs)     |
-| Frontend  | TypeScript, HTML, CSS   |
-| Package Mgmt | pip, npm            |
 
----
+## 🚀 Installation & Setup
 
-## ⚙️ Setup & Installation
 
-### Prerequisites
 
-- Python 3.8+
-- Node.js 16+
-- npm
+Follow the steps below to run the system locally.
 
----
 
-### 1. Clone the Repository
+
+### 1. Backend Setup
+
+
 
 ```bash
-git clone https://github.com/AhmedUsama29/Forgery-Detection.git
-cd Forgery-Detection
-```
 
-### 2. Backend Setup
+cd backend
 
-```bash
-# Install Python dependencies
+python -m venv venv
+
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
 pip install -r requirements.txt
 
-# Run the backend server
-python main.py
+uvicorn main:app --reload
+
 ```
 
-The backend will start on `http://localhost:8000` (or whichever port is configured in `main.py`).
 
-### 3. Frontend Setup
+
+### 2. Frontend Setup
+
+
 
 ```bash
-# Install Node dependencies
+
+cd frontend
+
 npm install
 
-# Start the frontend (development)
-npm start
+ng serve
+
 ```
 
----
+*The frontend will be available at `http://localhost:4200/` and the backend Swagger UI at `http://localhost:8000/docs`.*
 
-## 🔐 How It Works
 
-1. **Signing** – When a document is submitted, the backend signs its hash using the RSA **private key** (`private.pem`), creating a digital signature.
-2. **Verification** – To verify, the backend uses the RSA **public key** (`public.pem`) to check whether the signature matches the document's current hash.
-3. **Forgery Detection** – If the document has been altered in any way, the hash will differ from the signed hash, and the verification will **fail**, flagging the document as forged.
 
 ---
 
-## 📡 API Endpoints
 
-| Method | Endpoint     | Description                        |
-|--------|--------------|------------------------------------|
-| POST   | `/sign`      | Sign a document and return a signature |
-| POST   | `/verify`    | Verify a document against its signature |
 
-> *Exact endpoint names may vary — check `main.py` for the full API definition.*
+## 🔌 Core API Endpoints
 
----
 
-## 🖥️ Frontend Usage
 
-1. Open the frontend in your browser after running `npm start`
-2. Upload a file or paste document content
-3. Click **Sign** to generate a cryptographic signature, or **Verify** to check integrity
-4. The result will indicate whether the document is **authentic** or **forged**
+| Method | Endpoint | Description |
 
----
+| :--- | :--- | :--- |
 
-## 🔑 Key Management
+| `POST` | `/issue-certificate` | Generates a new cryptographically signed document and QR code. |
 
-> ⚠️ **Security Warning:** The `private.pem` and `public.pem` files in this repository are for **development/demo purposes only**. In a production environment:
-> - Never commit private keys to version control
-> - Store keys securely using environment variables or a secrets manager
-> - Rotate keys regularly
+| `POST` | `/verify` | Validates a document by passing it through the 4-Layer Defense Mechanism. |
 
-To generate a new key pair:
+| `GET`  | `/certificates` | Retrieves a paginated list of all issued certificates. |
 
-```bash
-# Generate private key
-openssl genrsa -out private.pem 2048
+| `DELETE` | `/certificates/{doc_id}` | Revokes a specific certificate by its unique identifier. |
 
-# Extract public key
-openssl rsa -in private.pem -pubout -out public.pem
-```
+
 
 ---
 
-## 📋 Requirements
 
-### Python (`requirements.txt`)
-Key dependencies likely include:
-- `fastapi` or `flask` – Web framework
-- `cryptography` or `pycryptodome` – RSA signing & verification
-- `uvicorn` – ASGI server (if FastAPI)
 
-### Node (`package.json`)
-- TypeScript compiler
-- Frontend build tooling
+## 👥 Engineering Team
 
----
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m "Add your feature"`
-4. Push and open a Pull Request
-
----
-
-## 📄 License
-
-This project is open source. See the repository for license details.
-
----
-
-## 👥 Team
 
 | Name | GitHub |
+
 |------|--------|
+
 | **Ahmed Osama** | [@AhmedUsama29](https://github.com/AhmedUsama29) |
+
 | **Mariam Ehab** | [@mariemehab](https://github.com/mariemehab) |
-| **Mohammed Elsayed** | — |
-| **Ahmed Fathy** | — |
-| **Mohammed Eslam** | — |
+
+| **Mohammed Elsayed** | [@mohamed-Elsayed211](https://github.com/mohamed-Elsayed211) |
+
+| **Ahmed Fathy** | [@ahmedfathy24](https://github.com/ahmedfathy24) |
+
+| **Mohammed Eslam** | [@Mohamed-Eslam6](https://github.com/Mohamed-Eslam6) |
+
+
+
+---
