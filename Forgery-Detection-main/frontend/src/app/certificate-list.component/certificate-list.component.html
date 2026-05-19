@@ -1,0 +1,50 @@
+<div class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">📋 سجل الشهادات الجامعية</h2>
+    <button class="btn btn-primary" (click)="loadCertificates()">تحديث القائمة</button>
+  </div>
+
+  <div class="card shadow border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 text-center">
+        <thead class="table-dark">
+          <tr>
+            <th>اسم الطالب</th>
+            <th>الكلية</th>
+            <th>سنة التخرج</th>
+            <th>المعرف (ID)</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cert of certificates()">
+            <td class="fw-bold">{{ cert.student_name }}</td>
+            <td>{{ cert.faculty }}</td>
+            <td>{{ cert.graduation_year }}</td>
+            <td>
+              <small class="font-monospace text-muted">{{ cert.doc_id }}</small>
+            </td>
+            <td>
+              <div class="btn-group">
+                <button class="btn btn-outline-info btn-sm" (click)="viewDetails(cert.doc_id)">
+                  🔍 عرض
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="deleteCert(cert.doc_id)">
+                  🗑️ مسح
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div *ngIf="selectedCert()" class="mt-4 card bg-light border-info">
+    <div class="card-body">
+      <h5 class="card-title">التفاصيل الكاملة للشهادة:</h5>
+      <pre class="bg-white p-3 border rounded">{{ selectedCert() | json }}</pre>
+      <button class="btn btn-secondary btn-sm" (click)="selectedCert.set(null)">إغلاق التفاصيل</button>
+    </div>
+  </div>
+</div>
